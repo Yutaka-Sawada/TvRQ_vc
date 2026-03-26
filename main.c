@@ -55,7 +55,7 @@ each_size = d#
 int main(int argc, char* argv[]){
 	char *p;
 	char *source_buf, *parity_buf, *inter_buf, *work_buf;
-	int i, j, max, rv;
+	int i, j, min, max, rv;
 	int source_count = 1000, parity_count = 200, lost_count = 0;
 	int input_count;
 	int *order_buf;
@@ -351,32 +351,35 @@ int main(int argc, char* argv[]){
 
 	// swap index to select available data
 	pcg32_srandom(0, 1);
-	for (i = 0; i < source_count; i++){
-		j = pcg32_boundedrand(source_count);
-		if (j != i){
-			rv = order_buf[j];
-			order_buf[j] = order_buf[i];
-			order_buf[i] = rv;
-		}
+	// Fisher–Yates shuffle [0 ~ source_count - 1]
+	i = source_count - 1;
+	while (i > 0){
+		j = pcg32_boundedrand(i + 1);
+		rv = order_buf[j];
+		order_buf[j] = order_buf[i];
+		order_buf[i] = rv;
+		i--;
 	}
-	max = source_count + lost_count;
-	for (i = source_count; i < max; i++){
-		j = source_count + pcg32_boundedrand(lost_count);
-		if (j != i){
-			rv = order_buf[j];
-			order_buf[j] = order_buf[i];
-			order_buf[i] = rv;
-		}
+	// shuffle [source_count ~ source_count + lost_count - 1]
+	min = source_count;
+	i = source_count + lost_count - 1;
+	while (i > min){
+		j = min + pcg32_boundedrand(i - min + 1);
+		rv = order_buf[j];
+		order_buf[j] = order_buf[i];
+		order_buf[i] = rv;
+		i--;
 	}
 	if (parity_count > lost_count){
-		max = source_count + parity_count;
-		for (i = source_count + lost_count; i < max; i++){
-			j = source_count + lost_count + pcg32_boundedrand(parity_count - lost_count);
-			if (j != i){
-				rv = order_buf[j];
-				order_buf[j] = order_buf[i];
-				order_buf[i] = rv;
-			}
+		// shuffle [source_count + lost_count ~ source_count + parity_count - 1]
+		min = source_count + lost_count;
+		i = source_count + parity_count - 1;
+		while (i > min){
+			j = min + pcg32_boundedrand(i - min + 1);
+			rv = order_buf[j];
+			order_buf[j] = order_buf[i];
+			order_buf[i] = rv;
+			i--;
 		}
 	}
 
